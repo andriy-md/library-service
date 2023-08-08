@@ -48,6 +48,19 @@ class NonAdminBookApiTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["results"], serializer.data)
 
+    def test_search_book_by_title(self):
+        create_sample_book()
+        not_searched_book = create_sample_book()
+        searched_book = create_sample_book(title="The Searched One")
+
+        response = self.client.get(BOOK_URL, {"title": "searched"})
+        serializer_searched = BookListRetrieveSerializer(searched_book)
+        serializer_not_searched = BookListRetrieveSerializer(not_searched_book)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn(serializer_searched.data, response.data["results"])
+        self.assertNotIn(serializer_not_searched.data, response.data["results"])
+
     def test_retrieve_book(self):
         book = create_sample_book()
         url = book_detail_url(book.id)
