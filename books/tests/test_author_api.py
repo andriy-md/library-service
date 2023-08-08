@@ -20,7 +20,7 @@ def author_detail_url(pk: int):
     return reverse("library:author-detail", args=[pk])
 
 
-class NonAdminGenreApiTest(TestCase):
+class NonAdminAuthorApiTest(TestCase):
     def setUp(self) -> None:
         self.client = APIClient()
 
