@@ -22,3 +22,6 @@ class BorrowingViewSet(
         if self.action in ("create", "update", "partial_update"):
             return BorrowingCreateSerializer
         return BorrowingListRetrieveSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
