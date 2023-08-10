@@ -2,8 +2,9 @@ from datetime import date
 
 from rest_framework import serializers
 
+from books.models import Book
 from books.serializers import BookListRetrieveSerializer
-from borrowings.models import Borrowing
+from borrowings.models import Borrowing, validate_book_inventory
 
 
 class BorrowingListRetrieveSerializer(serializers.ModelSerializer):
@@ -22,6 +23,11 @@ class BorrowingListRetrieveSerializer(serializers.ModelSerializer):
 
 
 class BorrowingCreateSerializer(serializers.ModelSerializer):
+    book = serializers.PrimaryKeyRelatedField(
+        queryset=Book.objects.all(),
+        validators=[validate_book_inventory]
+    )
+
     class Meta:
         model = Borrowing
         fields = [

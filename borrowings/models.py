@@ -6,7 +6,8 @@ from users.models import User
 
 
 def validate_book_inventory(value):
-    print(value)
+    if isinstance(value, Book):
+        value = value.id
     book = Book.objects.get(id=value)
     if book.inventory == 0:
         raise ValidationError(
