@@ -1,9 +1,17 @@
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator
 from django.db import models
 
 from books.models import Book
 from users.models import User
+
+
+def validate_book_inventory(value):
+    print(value)
+    book = Book.objects.get(id=value)
+    if book.inventory == 0:
+        raise ValidationError(
+            "There are no available samples of the book which you try to borrow"
+        )
 
 
 class Borrowing(models.Model):
@@ -13,7 +21,8 @@ class Borrowing(models.Model):
     book = models.ForeignKey(
         Book,
         on_delete=models.CASCADE,
-        related_name="borrowing"
+        related_name="borrowing",
+        validators=[validate_book_inventory]
     )
     user = models.ForeignKey(
         User,
@@ -32,3 +41,4 @@ class Borrowing(models.Model):
                 check=models.Q(actual_return_date__gte=models.F("borrow_date"))
             )
         ]
+
