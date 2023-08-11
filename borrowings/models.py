@@ -1,5 +1,5 @@
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
 
 from books.models import Book
 from users.models import User
@@ -23,7 +23,7 @@ class Borrowing(models.Model):
         Book,
         on_delete=models.CASCADE,
         related_name="borrowing",
-        validators=[validate_book_inventory]
+        # validators=[validate_book_inventory]
     )
     user = models.ForeignKey(
         User,
@@ -42,3 +42,12 @@ class Borrowing(models.Model):
                 check=models.Q(actual_return_date__gte=models.F("borrow_date"))
             )
         ]
+
+    def save(
+        self, force_insert=False, force_update=False, using=None, update_fields=None
+    ):
+        with transaction.atomic():
+            book = Book.objects.get(id=self.book.id)
+            book.inventory -= 1
+            book.save()
+            super(Borrowing, self).save(force_insert, force_update, using, update_fields)
