@@ -23,7 +23,7 @@ class Borrowing(models.Model):
         Book,
         on_delete=models.CASCADE,
         related_name="borrowing",
-        # validators=[validate_book_inventory]
+        validators=[validate_book_inventory]
     )
     user = models.ForeignKey(
         User,
