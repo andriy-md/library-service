@@ -52,7 +52,7 @@ def create_sample_borrowing(**params):
 
 
 def borrowing_detail_url(pk: int):
-    return reverse("borrowings:borrowings-detail", args=[pk])
+    return reverse("borrowings:borrowing-detail", args=[pk])
 
 
 class AuthenticatedNonAdminBookApiTest(TestCase):
@@ -139,6 +139,19 @@ class AuthenticatedNonAdminBookApiTest(TestCase):
         response = self.client.post(BORROWING_URL, data=payload)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_forbidden_retrieve_borrowing_of_another_user(self):
+        create_sample_borrowing(user=self.user)
+        another_user = get_user_model().objects.create_user(
+            email="another_user@admin.com", password="qwer1234", is_staff=False
+        )
+        borrowing2 = create_sample_borrowing(user=another_user)
+
+        response = self.client.get(
+            borrowing_detail_url(borrowing2.id)
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
 #     def test_search_book_by_title(self):
