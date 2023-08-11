@@ -42,4 +42,3 @@ class Borrowing(models.Model):
                 check=models.Q(actual_return_date__gte=models.F("borrow_date"))
             )
         ]
-
