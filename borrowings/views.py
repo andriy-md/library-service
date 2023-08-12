@@ -1,4 +1,4 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, permissions
 from rest_framework.generics import get_object_or_404
 
 from borrowings.models import Borrowing
@@ -14,7 +14,7 @@ class BorrowingViewSet(
 
     def get_queryset(self):
         queryset = Borrowing.objects.all().select_related("book", "user")
-        if self.action == "list":
+        if self.action == "list" and not self.request.user.is_staff:
             queryset = queryset.filter(user=self.request.user)
         return queryset
 
@@ -26,6 +26,10 @@ class BorrowingViewSet(
     def get_permissions(self):
         if self.action == "retrieve":
             self.permission_classes = [UserOrAdminDetail]
+        if self.action in ("create", "update", "partial_update"):
+            self.permission_classes = [permissions.IsAdminUser]
+        if self.action == "list":
+            self.permission_classes = [permissions.IsAuthenticated]
 
         return super(BorrowingViewSet, self).get_permissions()
 
