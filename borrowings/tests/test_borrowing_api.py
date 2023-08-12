@@ -179,6 +179,24 @@ class AdminBorrowingApiTest(TestCase):
             self.assertEqual(str(getattr(borrowing, key)), payload[key])
         self.assertEqual(book.inventory, initial_inventory - 1)
 
+    def test_raises_error_if_book_inventory_is_0(self):
+        book = create_sample_book(inventory=0)
+        payload = {
+            "expected_return_date": datetime.strftime(
+                date.today() + timedelta(days=10),
+                "%Y-%m-%d"
+            ),
+            "actual_return_date": datetime.strftime(
+                date.today() + timedelta(days=9),
+                "%Y-%m-%d"
+            ),
+            "book": book.id,
+        }
+
+        response = self.client.post(BORROWING_URL, data=payload)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_raises_error_if_expected_return_date_not_after_borrow_date(self):
         book = create_sample_book()
         payload = {
