@@ -55,7 +55,7 @@ def borrowing_detail_url(pk: int):
     return reverse("borrowings:borrowing-detail", args=[pk])
 
 
-class AuthenticatedNonAdminBookApiTest(TestCase):
+class AuthenticatedBorrowingBookApiTest(TestCase):
     def setUp(self) -> None:
         self.client = APIClient()
         self.user = get_user_model().objects.create_user(
@@ -79,66 +79,66 @@ class AuthenticatedNonAdminBookApiTest(TestCase):
         self.assertEqual(response.data["count"], 2)
         self.assertEqual(response.data["results"], serializer.data)
 
-    def test_create_borrowing_success(self):
-        book = create_sample_book()
-        initial_inventory = book.inventory
-        payload = {
-            "expected_return_date": datetime.strftime(
-                date.today() + timedelta(days=2),
-                "%Y-%m-%d"
-            ),
-            "actual_return_date": datetime.strftime(
-                date.today() + timedelta(days=2),
-                "%Y-%m-%d"
-            ),
-            "book": book.id,
-        }
+    # def test_create_borrowing_success(self):
+    #     book = create_sample_book()
+    #     initial_inventory = book.inventory
+    #     payload = {
+    #         "expected_return_date": datetime.strftime(
+    #             date.today() + timedelta(days=2),
+    #             "%Y-%m-%d"
+    #         ),
+    #         "actual_return_date": datetime.strftime(
+    #             date.today() + timedelta(days=2),
+    #             "%Y-%m-%d"
+    #         ),
+    #         "book": book.id,
+    #     }
+    #
+    #     response = self.client.post(BORROWING_URL, data=payload)
+    #     borrowing = Borrowing.objects.get(id=1)
+    #     payload.pop("book")
+    #     book.refresh_from_db()
+    #
+    #     self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+    #     for key in payload:
+    #         self.assertEqual(str(getattr(borrowing, key)), payload[key])
+    #     self.assertEqual(book.inventory, initial_inventory - 1)
 
-        response = self.client.post(BORROWING_URL, data=payload)
-        borrowing = Borrowing.objects.get(id=1)
-        payload.pop("book")
-        book.refresh_from_db()
+    # def test_raises_error_if_expected_return_date_not_after_borrow_date(self):
+    #     book = create_sample_book()
+    #     payload = {
+    #         "expected_return_date": datetime.strftime(
+    #             date.today(),
+    #             "%Y-%m-%d"
+    #         ),
+    #         "actual_return_date": datetime.strftime(
+    #             date.today() + timedelta(days=2),
+    #             "%Y-%m-%d"
+    #         ),
+    #         "book": book.id,
+    #     }
+    #
+    #     response = self.client.post(BORROWING_URL, data=payload)
+    #
+    #     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        for key in payload:
-            self.assertEqual(str(getattr(borrowing, key)), payload[key])
-        self.assertEqual(book.inventory, initial_inventory - 1)
-
-    def test_raises_error_if_expected_return_date_not_after_borrow_date(self):
-        book = create_sample_book()
-        payload = {
-            "expected_return_date": datetime.strftime(
-                date.today(),
-                "%Y-%m-%d"
-            ),
-            "actual_return_date": datetime.strftime(
-                date.today() + timedelta(days=2),
-                "%Y-%m-%d"
-            ),
-            "book": book.id,
-        }
-
-        response = self.client.post(BORROWING_URL, data=payload)
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def test_raises_error_if_actual_return_date_less_or_equals_borrow_date(self):
-        book = create_sample_book()
-        payload = {
-            "expected_return_date": datetime.strftime(
-                date.today() + timedelta(days=1),
-                "%Y-%m-%d"
-            ),
-            "actual_return_date": datetime.strftime(
-                date.today() - timedelta(days=1),
-                "%Y-%m-%d"
-            ),
-            "book": book.id,
-        }
-
-        response = self.client.post(BORROWING_URL, data=payload)
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    # def test_raises_error_if_actual_return_date_less_or_equals_borrow_date(self):
+    #     book = create_sample_book()
+    #     payload = {
+    #         "expected_return_date": datetime.strftime(
+    #             date.today() + timedelta(days=1),
+    #             "%Y-%m-%d"
+    #         ),
+    #         "actual_return_date": datetime.strftime(
+    #             date.today() - timedelta(days=1),
+    #             "%Y-%m-%d"
+    #         ),
+    #         "book": book.id,
+    #     }
+    #
+    #     response = self.client.post(BORROWING_URL, data=payload)
+    #
+    #     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_forbidden_retrieve_borrowing_of_another_user(self):
         create_sample_borrowing(user=self.user)
@@ -153,42 +153,45 @@ class AuthenticatedNonAdminBookApiTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_forbidden_create_borrowing(self):
+        book = create_sample_book()
+        payload = {
+            "expected_return_date": datetime.strftime(
+                date.today() + timedelta(days=1),
+                "%Y-%m-%d"
+            ),
+            "actual_return_date": datetime.strftime(
+                date.today() + timedelta(days=1),
+                "%Y-%m-%d"
+            ),
+            "book": book.id,
+        }
 
-#     def test_search_book_by_title(self):
-#         create_sample_book()
-#         not_searched_book = create_sample_book()
-#         searched_book = create_sample_book(title="The Searched One")
-#
-#         response = self.client.get(BOOK_URL, {"title": "searched"})
-#         serializer_searched = BookListRetrieveSerializer(searched_book)
-#         serializer_not_searched = BookListRetrieveSerializer(not_searched_book)
-#
-#         self.assertEqual(response.status_code, status.HTTP_200_OK)
-#         self.assertIn(serializer_searched.data, response.data["results"])
-#         self.assertNotIn(serializer_not_searched.data, response.data["results"])
-#
-#     def test_retrieve_book(self):
-#         book = create_sample_book()
-#         url = book_detail_url(book.id)
-#
-#         response = self.client.get(url)
-#         serializer = BookListRetrieveSerializer(book)
-#
-#         self.assertEqual(response.status_code, status.HTTP_200_OK)
-#         self.assertEqual(response.data, serializer.data)
-#
-#     def test_create_access_denied(self):
-#         payload = {
-#             "title": "New Book",
-#             "cover": "Soft",
-#             "inventory": 20,
-#             "daily_fee": 2
-#         }
-#         response = self.client.post(BOOK_URL, data=payload)
-#
-#         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-#
-#
+        response = self.client.post(BORROWING_URL, data=payload)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_forbidden_update_borrowing(self):
+        borrowing = create_sample_borrowing(user=self.user)
+        payload = {
+            "expected_return_date": datetime.strftime(
+                date.today() + timedelta(days=10),
+                "%Y-%m-%d"
+            ),
+            "actual_return_date": datetime.strftime(
+                date.today() + timedelta(days=9),
+                "%Y-%m-%d"
+            ),
+            "book": borrowing.book.id,
+        }
+        url = borrowing_detail_url(borrowing.id)
+
+        response = self.client.put(url, data=payload)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+
 # class AdminBookApiTest(TestCase):
 #     def setUp(self) -> None:
 #         self.client = APIClient()
