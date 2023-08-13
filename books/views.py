@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import viewsets
 from rest_framework import permissions
 
@@ -29,3 +30,16 @@ class BookViewSet(viewsets.ModelViewSet):
         if self.action in ("create", "update", "partial_update"):
             return BookCreateSerializer
         return BookListRetrieveSerializer
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="title",
+                description="Filter by title",
+                type=str
+            )
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        """For documentation purposes"""
+        return super(BookViewSet, self).list(request, *args, **kwargs)

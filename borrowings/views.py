@@ -1,10 +1,10 @@
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import viewsets, permissions, mixins, status
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 
 from borrowings.models import Borrowing
-from borrowings.permissions import UserOrAdminDetail
 from borrowings.serializers import BorrowingListRetrieveSerializer, BorrowingCreateSerializer, BorrowingReturnSerializer
 
 
@@ -70,3 +70,21 @@ class BorrowingViewSet(
         serializer.save()
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="is_active",
+                description="Filter Borrowings which are not returned",
+                type=bool
+            ),
+            OpenApiParameter(
+                name="user",
+                description="Filter Borrowings by User",
+                type={"type": "list", "items": {"type": "number"}}
+            )
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        """For documentation purposes"""
+        return super(BorrowingViewSet, self).list(request, *args, **kwargs)
