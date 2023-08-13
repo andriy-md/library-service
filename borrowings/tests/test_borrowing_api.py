@@ -40,12 +40,7 @@ def create_sample_borrowing(**params):
             date.today() + timedelta(days=2),
             "%Y-%m-%d"
         ),
-        "actual_return_date": datetime.strftime(
-            date.today() + timedelta(days=2),
-            "%Y-%m-%d"
-        ),
         "book": book,
-        "user": params["user"]
     }
     defaults.update(params)
     return Borrowing.objects.create(**defaults)
@@ -53,6 +48,10 @@ def create_sample_borrowing(**params):
 
 def borrowing_detail_url(pk: int):
     return reverse("borrowings:borrowing-detail", args=[pk])
+
+
+def borrowing_return_url(pk: int):
+    return reverse("borrowings:borrowing-return-borrowing", args=[pk])
 
 
 class AuthenticatedBorrowingApiTest(TestCase):
@@ -90,79 +89,13 @@ class AuthenticatedBorrowingApiTest(TestCase):
             borrowing_detail_url(borrowing2.id)
         )
 
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-    def test_forbidden_create_borrowing(self):
-        book = create_sample_book()
-        payload = {
-            "expected_return_date": datetime.strftime(
-                date.today() + timedelta(days=1),
-                "%Y-%m-%d"
-            ),
-            "actual_return_date": datetime.strftime(
-                date.today() + timedelta(days=1),
-                "%Y-%m-%d"
-            ),
-            "book": book.id,
-        }
-
-        response = self.client.post(BORROWING_URL, data=payload)
-
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-    def test_forbidden_update_borrowing(self):
-        borrowing = create_sample_borrowing(user=self.user)
-        payload = {
-            "expected_return_date": datetime.strftime(
-                date.today() + timedelta(days=10),
-                "%Y-%m-%d"
-            ),
-            "actual_return_date": datetime.strftime(
-                date.today() + timedelta(days=9),
-                "%Y-%m-%d"
-            ),
-            "book": borrowing.book.id,
-        }
-        url = borrowing_detail_url(borrowing.id)
-
-        response = self.client.put(url, data=payload)
-
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-
-class AdminBorrowingApiTest(TestCase):
-    def setUp(self) -> None:
-        self.client = APIClient()
-        self.user = get_user_model().objects.create_user(
-            email="test_user@admin.com", password="qwer1234", is_staff=True
-        )
-        self.client.force_authenticate(self.user)
-
-    def test_list_borrowings(self):
-        create_sample_borrowing(user=self.user)
-        create_sample_borrowing(user=self.user)
-        another_user = get_user_model().objects.create_user(
-            email="another_user@admin.com", password="qwer1234", is_staff=False
-        )
-        create_sample_borrowing(user=another_user)
-
-        response = self.client.get(BORROWING_URL)
-        borrowings = Borrowing.objects.all()
-        serializer = BorrowingListRetrieveSerializer(borrowings, many=True)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["count"], 3)
-        self.assertEqual(response.data["results"], serializer.data)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_create_borrowing_success(self):
-        book = create_sample_book()
+        book = create_sample_book(inventory=3)
         initial_inventory = book.inventory
         payload = {
             "expected_return_date": datetime.strftime(
-                date.today() + timedelta(days=2),
-                "%Y-%m-%d"
-            ),
-            "actual_return_date": datetime.strftime(
                 date.today() + timedelta(days=2),
                 "%Y-%m-%d"
             ),
@@ -215,23 +148,49 @@ class AdminBorrowingApiTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_raises_error_if_actual_return_date_less_or_equals_borrow_date(self):
-        book = create_sample_book()
+    def test_update_borrowing_unavailable(self):
+        borrowing = create_sample_borrowing(user=self.user)
         payload = {
             "expected_return_date": datetime.strftime(
-                date.today() + timedelta(days=1),
+                date.today() + timedelta(days=10),
                 "%Y-%m-%d"
             ),
             "actual_return_date": datetime.strftime(
-                date.today() - timedelta(days=1),
+                date.today() + timedelta(days=9),
                 "%Y-%m-%d"
             ),
-            "book": book.id,
+            "book": borrowing.book.id,
         }
+        url = borrowing_detail_url(borrowing.id)
 
-        response = self.client.post(BORROWING_URL, data=payload)
+        response = self.client.put(url, data=payload)
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+class AdminBorrowingApiTest(TestCase):
+    def setUp(self) -> None:
+        self.client = APIClient()
+        self.user = get_user_model().objects.create_user(
+            email="test_user@admin.com", password="qwer1234", is_staff=True
+        )
+        self.client.force_authenticate(self.user)
+
+    def test_list_all_borrowings(self):
+        create_sample_borrowing(user=self.user)
+        create_sample_borrowing(user=self.user)
+        another_user = get_user_model().objects.create_user(
+            email="another_user@admin.com", password="qwer1234", is_staff=False
+        )
+        create_sample_borrowing(user=another_user)
+
+        response = self.client.get(BORROWING_URL)
+        borrowings = Borrowing.objects.all()
+        serializer = BorrowingListRetrieveSerializer(borrowings, many=True)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 3)
+        self.assertEqual(response.data["results"], serializer.data)
 
     def test_retrieve_borrowing_of_other_user(self):
         another_user = get_user_model().objects.create_user(
@@ -243,3 +202,37 @@ class AdminBorrowingApiTest(TestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_book_inventory_increased_by_1_when_borrowing_returned(self):
+        book = create_sample_book()
+        initial_inventory = book.inventory
+        borrowing = create_sample_borrowing(
+            user=self.user,
+            book=book
+        )
+        url = borrowing_return_url(pk=borrowing.id)
+
+        response = self.client.patch(
+            url,
+            data={"actual_return_date": date.today() + timedelta(days=1)}
+        )
+        book.refresh_from_db()
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(book.inventory, initial_inventory)
+
+    def test_borrowing_may_not_be_returned_twice(self):
+        borrowing = create_sample_borrowing(
+            user=self.user,
+        )
+        url = borrowing_return_url(pk=borrowing.id)
+        response1 = self.client.patch(
+            url,
+            data={"actual_return_date": date.today() + timedelta(days=1)}
+        )
+        response2 = self.client.patch(
+            url,
+            data={"actual_return_date": date.today() + timedelta(days=2)}
+        )
+
+        self.assertEqual(response2.status_code, status.HTTP_400_BAD_REQUEST)
