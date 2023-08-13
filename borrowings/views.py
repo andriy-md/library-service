@@ -1,13 +1,18 @@
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, mixins, status
+from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
+from rest_framework.response import Response
 
 from borrowings.models import Borrowing
 from borrowings.permissions import UserOrAdminDetail
-from borrowings.serializers import BorrowingListRetrieveSerializer, BorrowingCreateSerializer, BorrowingUpdateSerializer
+from borrowings.serializers import BorrowingListRetrieveSerializer, BorrowingCreateSerializer, BorrowingReturnSerializer
 
 
 class BorrowingViewSet(
-    viewsets.ModelViewSet
+    mixins.CreateModelMixin,
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet
 ):
     queryset = Borrowing.objects.all().select_related("book", "user")
     serializer_class = BorrowingCreateSerializer
@@ -31,26 +36,37 @@ class BorrowingViewSet(
     def get_serializer_class(self):
         if self.action == "create":
             return BorrowingCreateSerializer
-        if self.action in ("update", "partial_update"):
-            return BorrowingUpdateSerializer
+        if self.action == "return_borrowing":
+            return BorrowingReturnSerializer
         return BorrowingListRetrieveSerializer
 
     def get_permissions(self):
         if self.action == "retrieve":
             self.permission_classes = [UserOrAdminDetail]
-        if self.action in ("create", "update", "partial_update"):
-            self.permission_classes = [permissions.IsAdminUser]
         if self.action == "list":
             self.permission_classes = [permissions.IsAuthenticated]
 
         return super(BorrowingViewSet, self).get_permissions()
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user, actual_return_date=None)
+        if self.action == "create":
+            serializer.save(user=self.request.user, actual_return_date=None)
 
     def get_object(self):
         obj = get_object_or_404(self.get_queryset(), pk=self.kwargs["pk"])
         self.check_object_permissions(self.request, obj)
         return obj
 
+    @action(detail=True, methods=["patch"], url_path="return")
+    def return_borrowing(self, request, pk):
+        borrowing = get_object_or_404(self.get_queryset(), id=pk)
+        serializer = BorrowingReturnSerializer(
+            borrowing,
+            data=request.data,
+            partial=True,
+            context={"borrow_date": borrowing.borrow_date}
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
 
+        return Response(serializer.data, status=status.HTTP_200_OK)

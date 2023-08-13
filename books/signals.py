@@ -1,5 +1,7 @@
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
+from rest_framework.exceptions import ValidationError
+from rest_framework.generics import get_object_or_404
 
 from books.models import Book
 from borrowings.models import Borrowing
@@ -13,9 +15,13 @@ def decrease_inventory_when_borrowing_created(sender, instance, created, **kwarg
         book.save()
 
 
-@receiver(post_save, sender=Borrowing)
-def increase_inventory_when_borrowing_returned(sender, instance, created, **kwargs):
-    if not created and instance.actual_return_date:
-        book = Book.objects.get(id=instance.book.id)
-        book.inventory += 1
-        book.save()
+@receiver(pre_save, sender=Borrowing)
+def increase_inventory_when_borrowing_returned(sender, instance, **kwargs):
+    if instance.pk:
+        current_borrowing = get_object_or_404(Borrowing.objects.all(), id=instance.pk)
+        if current_borrowing.actual_return_date:
+            raise ValidationError("The book has already been returned")
+        else:
+            book = Book.objects.get(id=instance.book.id)
+            book.inventory += 1
+            book.save()
