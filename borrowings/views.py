@@ -3,7 +3,7 @@ from rest_framework.generics import get_object_or_404
 
 from borrowings.models import Borrowing
 from borrowings.permissions import UserOrAdminDetail
-from borrowings.serializers import BorrowingListRetrieveSerializer, BorrowingCreateSerializer
+from borrowings.serializers import BorrowingListRetrieveSerializer, BorrowingCreateSerializer, BorrowingUpdateSerializer
 
 
 class BorrowingViewSet(
@@ -15,16 +15,24 @@ class BorrowingViewSet(
     def get_queryset(self):
         queryset = Borrowing.objects.all().select_related("book", "user")
         is_active = self.request.query_params.get("is_active")
+        users = self.request.query_params.get("users")
 
-        if self.action == "list" and not self.request.user.is_staff:
+        if not self.request.user.is_staff:
             queryset = queryset.filter(user=self.request.user)
-        if is_active.lower() == "true":
+        else:
+            if users:
+                users = [int(user_id) for user_id in users.split(",")]
+                queryset = queryset.filter(user_id__in=users)
+        if is_active and is_active.lower() == "true":
             queryset = queryset.filter(actual_return_date__isnull=True)
+
         return queryset
 
     def get_serializer_class(self):
-        if self.action in ("create", "update", "partial_update"):
+        if self.action == "create":
             return BorrowingCreateSerializer
+        if self.action in ("update", "partial_update"):
+            return BorrowingUpdateSerializer
         return BorrowingListRetrieveSerializer
 
     def get_permissions(self):
@@ -38,7 +46,7 @@ class BorrowingViewSet(
         return super(BorrowingViewSet, self).get_permissions()
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(user=self.request.user, actual_return_date=None)
 
     def get_object(self):
         obj = get_object_or_404(self.get_queryset(), pk=self.kwargs["pk"])

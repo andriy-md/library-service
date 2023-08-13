@@ -11,3 +11,11 @@ def decrease_inventory_when_borrowing_created(sender, instance, created, **kwarg
         book = Book.objects.get(id=instance.book.id)
         book.inventory -= 1
         book.save()
+
+
+@receiver(post_save, sender=Borrowing)
+def increase_inventory_when_borrowing_returned(sender, instance, created, **kwargs):
+    if not created and instance.actual_return_date:
+        book = Book.objects.get(id=instance.book.id)
+        book.inventory += 1
+        book.save()
