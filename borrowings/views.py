@@ -41,10 +41,10 @@ class BorrowingViewSet(
         return BorrowingListRetrieveSerializer
 
     def get_permissions(self):
-        if self.action == "retrieve":
-            self.permission_classes = [UserOrAdminDetail]
-        if self.action == "list":
+        if self.action in ("list", "create", "retrieve"):
             self.permission_classes = [permissions.IsAuthenticated]
+        if self.action == "return_borrowing":
+            self.permission_classes = [permissions.IsAdminUser]
 
         return super(BorrowingViewSet, self).get_permissions()
 
