@@ -21,12 +21,7 @@ def create_sample_author(**params):
 
 
 def create_sample_book(**params):
-    defaults = {
-        "title": "Sample",
-        "cover": "Hard",
-        "inventory": 3,
-        "daily_fee": 1
-    }
+    defaults = {"title": "Sample", "cover": "Hard", "inventory": 3, "daily_fee": 1}
     defaults.update(params)
     book = Book.objects.create(**defaults)
     book.authors.set([create_sample_author()])
@@ -37,8 +32,7 @@ def create_sample_borrowing(**params):
     book = create_sample_book()
     defaults = {
         "expected_return_date": datetime.strftime(
-            date.today() + timedelta(days=2),
-            "%Y-%m-%d"
+            date.today() + timedelta(days=2), "%Y-%m-%d"
         ),
         "book": book,
     }
@@ -85,9 +79,7 @@ class AuthenticatedBorrowingApiTest(TestCase):
         )
         borrowing2 = create_sample_borrowing(user=another_user)
 
-        response = self.client.get(
-            borrowing_detail_url(borrowing2.id)
-        )
+        response = self.client.get(borrowing_detail_url(borrowing2.id))
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
@@ -96,8 +88,7 @@ class AuthenticatedBorrowingApiTest(TestCase):
         initial_inventory = book.inventory
         payload = {
             "expected_return_date": datetime.strftime(
-                date.today() + timedelta(days=2),
-                "%Y-%m-%d"
+                date.today() + timedelta(days=2), "%Y-%m-%d"
             ),
             "book": book.id,
         }
@@ -116,12 +107,10 @@ class AuthenticatedBorrowingApiTest(TestCase):
         book = create_sample_book(inventory=0)
         payload = {
             "expected_return_date": datetime.strftime(
-                date.today() + timedelta(days=10),
-                "%Y-%m-%d"
+                date.today() + timedelta(days=10), "%Y-%m-%d"
             ),
             "actual_return_date": datetime.strftime(
-                date.today() + timedelta(days=9),
-                "%Y-%m-%d"
+                date.today() + timedelta(days=9), "%Y-%m-%d"
             ),
             "book": book.id,
         }
@@ -133,13 +122,9 @@ class AuthenticatedBorrowingApiTest(TestCase):
     def test_raises_error_if_expected_return_date_not_after_borrow_date(self):
         book = create_sample_book()
         payload = {
-            "expected_return_date": datetime.strftime(
-                date.today(),
-                "%Y-%m-%d"
-            ),
+            "expected_return_date": datetime.strftime(date.today(), "%Y-%m-%d"),
             "actual_return_date": datetime.strftime(
-                date.today() + timedelta(days=2),
-                "%Y-%m-%d"
+                date.today() + timedelta(days=2), "%Y-%m-%d"
             ),
             "book": book.id,
         }
@@ -152,12 +137,10 @@ class AuthenticatedBorrowingApiTest(TestCase):
         borrowing = create_sample_borrowing(user=self.user)
         payload = {
             "expected_return_date": datetime.strftime(
-                date.today() + timedelta(days=10),
-                "%Y-%m-%d"
+                date.today() + timedelta(days=10), "%Y-%m-%d"
             ),
             "actual_return_date": datetime.strftime(
-                date.today() + timedelta(days=9),
-                "%Y-%m-%d"
+                date.today() + timedelta(days=9), "%Y-%m-%d"
             ),
             "book": borrowing.book.id,
         }
@@ -206,15 +189,11 @@ class AdminBorrowingApiTest(TestCase):
     def test_book_inventory_increased_by_1_when_borrowing_returned(self):
         book = create_sample_book()
         initial_inventory = book.inventory
-        borrowing = create_sample_borrowing(
-            user=self.user,
-            book=book
-        )
+        borrowing = create_sample_borrowing(user=self.user, book=book)
         url = borrowing_return_url(pk=borrowing.id)
 
         response = self.client.patch(
-            url,
-            data={"actual_return_date": date.today() + timedelta(days=1)}
+            url, data={"actual_return_date": date.today() + timedelta(days=1)}
         )
         book.refresh_from_db()
 
@@ -227,12 +206,10 @@ class AdminBorrowingApiTest(TestCase):
         )
         url = borrowing_return_url(pk=borrowing.id)
         response1 = self.client.patch(
-            url,
-            data={"actual_return_date": date.today() + timedelta(days=1)}
+            url, data={"actual_return_date": date.today() + timedelta(days=1)}
         )
         response2 = self.client.patch(
-            url,
-            data={"actual_return_date": date.today() + timedelta(days=2)}
+            url, data={"actual_return_date": date.today() + timedelta(days=2)}
         )
 
         self.assertEqual(response2.status_code, status.HTTP_400_BAD_REQUEST)

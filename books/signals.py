@@ -10,7 +10,7 @@ from borrowings.models import Borrowing
 @receiver(post_save, sender=Borrowing)
 def decrease_inventory_when_borrowing_created(sender, instance, created, **kwargs):
     if created:
-        book = Book.objects.get(id=instance.book.id)
+        book = instance.book
         book.inventory -= 1
         book.save()
 
@@ -22,6 +22,6 @@ def increase_inventory_when_borrowing_returned(sender, instance, **kwargs):
         if current_borrowing.actual_return_date:
             raise ValidationError("The book has already been returned")
         else:
-            book = Book.objects.get(id=instance.book.id)
+            book = instance.book
             book.inventory += 1
             book.save()

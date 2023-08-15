@@ -5,14 +5,18 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 
 from borrowings.models import Borrowing
-from borrowings.serializers import BorrowingListRetrieveSerializer, BorrowingCreateSerializer, BorrowingReturnSerializer
+from borrowings.serializers import (
+    BorrowingListRetrieveSerializer,
+    BorrowingCreateSerializer,
+    BorrowingReturnSerializer,
+)
 
 
 class BorrowingViewSet(
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
-    viewsets.GenericViewSet
+    viewsets.GenericViewSet,
 ):
     queryset = Borrowing.objects.all().select_related("book", "user")
     serializer_class = BorrowingCreateSerializer
@@ -26,7 +30,7 @@ class BorrowingViewSet(
             queryset = queryset.filter(user=self.request.user)
         else:
             if users:
-                users = [int(user_id) for user_id in users.split(",")]
+                users = list(map(int, users.split(",")))
                 queryset = queryset.filter(user_id__in=users)
         if is_active and is_active.lower() == "true":
             queryset = queryset.filter(actual_return_date__isnull=True)
@@ -64,7 +68,7 @@ class BorrowingViewSet(
             borrowing,
             data=request.data,
             partial=True,
-            context={"borrow_date": borrowing.borrow_date}
+            context={"borrow_date": borrowing.borrow_date},
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -76,13 +80,13 @@ class BorrowingViewSet(
             OpenApiParameter(
                 name="is_active",
                 description="Filter Borrowings which are not returned",
-                type=bool
+                type=bool,
             ),
             OpenApiParameter(
                 name="user",
                 description="Filter Borrowings by User",
-                type={"type": "list", "items": {"type": "number"}}
-            )
+                type={"type": "list", "items": {"type": "number"}},
+            ),
         ]
     )
     def list(self, request, *args, **kwargs):

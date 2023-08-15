@@ -4,7 +4,11 @@ from rest_framework import permissions
 
 from books.models import Author, Book
 from books.permissions import IsAdminOrReadOnly
-from books.serializers import AuthorSerializer, BookCreateSerializer, BookListRetrieveSerializer
+from books.serializers import (
+    AuthorSerializer,
+    BookCreateSerializer,
+    BookListRetrieveSerializer,
+)
 
 
 class AuthorViewSet(viewsets.ModelViewSet):
@@ -33,11 +37,7 @@ class BookViewSet(viewsets.ModelViewSet):
 
     @extend_schema(
         parameters=[
-            OpenApiParameter(
-                name="title",
-                description="Filter by title",
-                type=str
-            )
+            OpenApiParameter(name="title", description="Filter by title", type=str)
         ]
     )
     def list(self, request, *args, **kwargs):

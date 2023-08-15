@@ -18,14 +18,13 @@ class BorrowingListRetrieveSerializer(serializers.ModelSerializer):
             "expected_return_date",
             "actual_return_date",
             "book",
-            "user"
+            "user",
         ]
 
 
 class BorrowingCreateSerializer(serializers.ModelSerializer):
     book = serializers.PrimaryKeyRelatedField(
-        queryset=Book.objects.all(),
-        validators=[validate_book_inventory]
+        queryset=Book.objects.all(), validators=[validate_book_inventory]
     )
 
     class Meta:

@@ -17,12 +17,7 @@ def create_sample_author(**params):
 
 
 def create_sample_book(**params):
-    defaults = {
-        "title": "Sample",
-        "cover": "Hard",
-        "inventory": 10,
-        "daily_fee": 1
-    }
+    defaults = {"title": "Sample", "cover": "Hard", "inventory": 10, "daily_fee": 1}
     defaults.update(params)
     book = Book.objects.create(**defaults)
     book.authors.set([create_sample_author()])
@@ -76,7 +71,7 @@ class NonAdminBookApiTest(TestCase):
             "title": "New Book",
             "cover": "Soft",
             "inventory": 20,
-            "daily_fee": 2
+            "daily_fee": 2,
         }
         response = self.client.post(BOOK_URL, data=payload)
 
@@ -98,7 +93,7 @@ class AdminBookApiTest(TestCase):
             "authors": [1],
             "cover": "Soft",
             "inventory": 20,
-            "daily_fee": 2
+            "daily_fee": 2,
         }
         response = self.client.post(BOOK_URL, data=payload)
 
@@ -118,7 +113,7 @@ class AdminBookApiTest(TestCase):
             "authors": [author.id],
             "cover": "Soft",
             "inventory": 20,
-            "daily_fee": 2
+            "daily_fee": 2,
         }
 
         response = self.client.put(url, data=payload)
@@ -136,7 +131,7 @@ class AdminBookApiTest(TestCase):
             "title": "New Book",
             "cover": "Soft",
             "inventory": 20,
-            "daily_fee": 2
+            "daily_fee": 2,
         }
 
         response = self.client.patch(url, data=payload)

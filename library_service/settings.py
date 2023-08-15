@@ -27,7 +27,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get(
     "DJANGO_SECRET_KEY",
-    "django-insecure-0d7pb_x%a$81k_(-ks1%q(8&sr5bb!t_2m9dehb()+t1k+b3he"
+    "django-insecure-0d7pb_x%a$81k_(-ks1%q(8&sr5bb!t_2m9dehb()+t1k+b3he",
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -48,7 +48,6 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt",
     "drf_spectacular",
-
     "users",
     "books",
     "borrowings",
@@ -148,9 +147,7 @@ REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
-SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15)
-}
+SIMPLE_JWT = {"ACCESS_TOKEN_LIFETIME": timedelta(minutes=15)}
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Library Service API",

@@ -8,7 +8,7 @@ class Author(models.Model):
 
     @property
     def full_name(self):
-        return self.first_name + " " + self.last_name
+        return f"{self.first_name} {self.last_name}"
 
     def __str__(self):
         return self.full_name
@@ -25,8 +25,7 @@ class Book(models.Model):
     inventory = models.IntegerField(
         validators=[
             validators.MinValueValidator(
-                limit_value=0,
-                message="Book count may not be less than 0"
+                limit_value=0, message="Book count may not be less than 0"
             )
         ]
     )
@@ -35,12 +34,11 @@ class Book(models.Model):
         decimal_places=2,
         validators=[
             validators.MinValueValidator(
-                limit_value=0,
-                message="Price may not be negative"
+                limit_value=0, message="Price may not be negative"
             )
-        ]
+        ],
     )
-    
+
     def save(
         self, force_insert=False, force_update=False, using=None, update_fields=None
     ):
